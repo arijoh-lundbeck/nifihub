@@ -1,0 +1,17 @@
+# Flow checkstyle rules for Snowflake Flow Diff
+# See: https://github.com/Snowflake-Labs/snowflake-flow-diff
+
+include:
+  - concurrentTasks
+  - snapshotMetadata
+  - emptyParameter
+  - unusedParameter
+  - noSelfLoop
+  - backpressureThreshold
+
+rules:
+  concurrentTasks:
+    parameters:
+      limit: 4
+  backpressureThreshold:
+    parameters: {}

@@ -1,0 +1,4 @@
+nipyapi>=1.5.0
+requests>=2.31.0
+pyyaml>=6.0
+jsonschema>=4.0

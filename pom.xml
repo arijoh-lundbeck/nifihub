@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.snowflake.nifihub</groupId>
+    <artifactId>nifihub-parent</artifactId>
+    <version>1</version>
+    <packaging>pom</packaging>
+
+    <name>NiFi Hub Parent</name>
+    <description>Parent POM for NiFi Hub extension bundles and shared build configuration.</description>
+    <url>https://github.com/Snowflake-Labs/nifihub</url>
+    <inceptionYear>2026</inceptionYear>
+
+    <organization>
+        <name>Snowflake Inc.</name>
+        <url>https://www.snowflake.com/</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:https://github.com/Snowflake-Labs/nifihub.git</connection>
+        <developerConnection>scm:git:git@github.com:Snowflake-Labs/nifihub.git</developerConnection>
+        <url>https://github.com/Snowflake-Labs/nifihub</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <properties>
+        <!-- Build configuration -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.release>21</maven.compiler.release>
+        <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
+
+        <!-- NiFi versions -->
+        <nifi.version>2.9.0</nifi.version>
+        <nifi-api.version>2.8.0</nifi-api.version>
+        <nifi.nar.maven.plugin.version>2.3.0</nifi.nar.maven.plugin.version>
+
+        <!-- Logging -->
+        <org.slf4j.version>2.0.18</org.slf4j.version>
+
+        <!-- Testing -->
+        <junit.version>6.1.0</junit.version>
+        <mockito.version>5.23.0</mockito.version>
+
+        <!-- Quality tools -->
+        <pmd.version>7.24.0</pmd.version>
+        <checkstyle.version>13.4.2</checkstyle.version>
+        <jacoco.version>0.8.14</jacoco.version>
+        <surefire.version>3.5.5</surefire.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- NiFi API (provided at runtime by the NiFi framework) -->
+            <dependency>
+                <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-api</artifactId>
+                <version>${nifi-api.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- NiFi utilities -->
+            <dependency>
+                <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-utils</artifactId>
+                <version>${nifi.version}</version>
+            </dependency>
+
+            <!-- Logging -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${org.slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${org.slf4j.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Testing: NiFi Mock -->
+            <dependency>
+                <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-mock</artifactId>
+                <version>${nifi.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Testing: JUnit 5 -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Testing: Mockito -->
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.nifi</groupId>
+                    <artifactId>nifi-nar-maven-plugin</artifactId>
+                    <version>${nifi.nar.maven.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${surefire.version}</version>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <java.awt.headless>true</java.awt.headless>
+                        </systemPropertyVariables>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${surefire.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>3.6.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>${checkstyle.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>3.28.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>net.sourceforge.pmd</groupId>
+                            <artifactId>pmd-core</artifactId>
+                            <version>${pmd.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>net.sourceforge.pmd</groupId>
+                            <artifactId>pmd-java</artifactId>
+                            <version>${pmd.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.rat</groupId>
+                    <artifactId>apache-rat-plugin</artifactId>
+                    <version>0.18</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.4.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.12.0</version>
+                    <configuration>
+                        <failOnError>true</failOnError>
+                        <quiet>true</quiet>
+                        <show>private</show>
+                        <encoding>UTF-8</encoding>
+                        <doclint>none</doclint>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>3.2.8</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonatype.central</groupId>
+                    <artifactId>central-publishing-maven-plugin</artifactId>
+                    <version>0.10.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <version>2.21.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.5.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>3.6.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>flatten-maven-plugin</artifactId>
+                    <version>1.7.3</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <!-- Enforce minimum Maven and Java versions, ban problematic dependencies -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-build-requirements</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>3.9.16</version>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>21</version>
+                                </requireJavaVersion>
+                                <banDuplicatePomDependencyVersions />
+                                <requireSameVersions>
+                                    <plugins>
+                                        <plugin>org.apache.maven.plugins:maven-surefire-plugin</plugin>
+                                        <plugin>org.apache.maven.plugins:maven-failsafe-plugin</plugin>
+                                    </plugins>
+                                </requireSameVersions>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>junit:junit</exclude>
+                                        <exclude>org.junit.vintage:junit-vintage-engine</exclude>
+                                        <exclude>org.testng:testng</exclude>
+                                        <exclude>commons-logging:commons-logging</exclude>
+                                        <exclude>log4j:log4j</exclude>
+                                        <exclude>org.apache.logging.log4j:log4j-core</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- NAR packaging support -->
+            <plugin>
+                <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-nar-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <enforceDocGeneration>true</enforceDocGeneration>
+                </configuration>
+            </plugin>
+
+            <!-- Checkstyle configuration (always active, checked via contrib-check profile) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <configLocation>${maven.multiModuleProjectDirectory}/checkstyle.xml</configLocation>
+                    <violationSeverity>warning</violationSeverity>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                </configuration>
+            </plugin>
+
+            <!-- Apache RAT license header check -->
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <configuration>
+                    <consoleOutput>true</consoleOutput>
+                    <useIdeaDefaultExcludes>true</useIdeaDefaultExcludes>
+                    <excludes>
+                        <exclude>**/*.json</exclude>
+                        <exclude>**/*.md</exclude>
+                        <exclude>**/.gitkeep</exclude>
+                        <exclude>**/NOTICE</exclude>
+                        <exclude>mvnw</exclude>
+                        <exclude>.mvn/wrapper/**</exclude>
+                        <exclude>.editorconfig</exclude>
+                        <exclude>codecov.yml</exclude>
+                        <exclude>**/.flattened-pom.xml</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- PMD configuration -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <printFailingErrors>true</printFailingErrors>
+                    <linkXRef>false</linkXRef>
+                    <includeTests>true</includeTests>
+                    <targetJdk>${maven.compiler.release}</targetJdk>
+                    <rulesets>
+                        <ruleset>${maven.multiModuleProjectDirectory}/pmd-ruleset.xml</ruleset>
+                    </rulesets>
+                </configuration>
+            </plugin>
+
+            <!-- Flatten POMs for CI-friendly ${revision} versions -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <configuration>
+                    <flattenMode>oss</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten-clean</id>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Skip source and javadoc for NAR modules -->
+        <profile>
+            <id>nar-packaging</id>
+            <activation>
+                <property>
+                    <name>packaging</name>
+                    <value>nar</value>
+                </property>
+            </activation>
+            <properties>
+                <maven.source.skip>true</maven.source.skip>
+                <maven.javadoc.skip>true</maven.javadoc.skip>
+            </properties>
+        </profile>
+
+        <!-- Code coverage reporting (JaCoCo) -->
+        <profile>
+            <id>report-code-coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Contribution checks: checkstyle + PMD + RAT -->
+        <profile>
+            <id>contrib-check</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.rat</groupId>
+                        <artifactId>apache-rat-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>check-style</id>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <inputEncoding>UTF-8</inputEncoding>
+                                    <excludes>**/generated-sources/**/*</excludes>
+                                    <sourceDirectories>
+                                        <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                                        <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+                                    </sourceDirectories>
+                                </configuration>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-pmd-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>check</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Release profile: source, javadoc, GPG signing -->
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

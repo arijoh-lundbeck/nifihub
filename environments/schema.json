@@ -1,0 +1,404 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NiFi Hub Environment Configuration",
+  "description": "Declarative configuration for Openflow deployments, runtimes, and flow assignments.",
+  "type": "object",
+  "required": ["account", "deployments"],
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "type": "object",
+      "required": ["name", "github_environment"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable account name (used in logs and comments)."
+        },
+        "github_environment": {
+          "type": "string",
+          "description": "GitHub Environment name that holds secrets for this account."
+        }
+      }
+    },
+    "deployments": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "description": "Only one SNOWFLAKE deployment is allowed per account.",
+      "items": {
+        "type": "object",
+        "required": ["name", "deployment_type"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_-]{0,254}$",
+            "description": "Snowflake identifier for the deployment."
+          },
+          "deployment_type": {
+            "type": "string",
+            "enum": ["SNOWFLAKE"],
+            "description": "Deployment type. Only SNOWFLAKE (SPCS) is supported."
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "Free-text alias shown in the Openflow UI."
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "runtimes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/runtime"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "runtime": {
+      "type": "object",
+      "required": ["name", "database", "schema"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_-]{0,254}$",
+          "description": "Snowflake identifier for the runtime."
+        },
+        "database": {
+          "type": "string",
+          "description": "Database where the runtime is scoped."
+        },
+        "schema": {
+          "type": "string",
+          "description": "Schema where the runtime is scoped."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "NiFi runtime URL (without /nifi-api suffix). When set, SOM SQL-based runtime lifecycle management (CREATE/ALTER/DELETE, EAI, network rules, suspend/resume) is skipped entirely. Only NiFi API operations (registries, flows, parameters, controller services) are performed."
+        },
+        "node_type": {
+          "type": "string",
+          "enum": ["SMALL", "MEDIUM", "LARGE"]
+        },
+        "min_nodes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "max_nodes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "suspend": {
+          "type": "boolean",
+          "description": "When true, the runtime is suspended (SUSPEND). When false, the runtime is resumed (RESUME). Defaults to false.",
+          "default": false
+        },
+        "reconcile": {
+          "type": "boolean",
+          "description": "When false, the CD pipeline skips NiFi-level reconciliation (flows, parameters, registries, controller services) for this runtime. The runtime infrastructure (SQL-level) is still managed. Defaults to true.",
+          "default": true
+        },
+        "sensitive_param_pattern": {
+          "type": "string",
+          "description": "Regex pattern to classify parameters from the auto-provisioned Snowflake Parameter Provider as sensitive. Parameters matching this pattern are marked SENSITIVE; others are NON_SENSITIVE. Defaults to '.*' (all sensitive).",
+          "default": ".*"
+        },
+        "execute_as_role": {
+          "type": "string",
+          "description": "Role that connectors use for Snowflake data access."
+        },
+        "display_name": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "network_rules": {
+          "type": "array",
+          "description": "Custom network rules for external access. A registry NR and EAI are auto-created by the pipeline.",
+          "items": {
+            "$ref": "#/definitions/network_rule"
+          }
+        },
+        "flow_registries": {
+          "type": "array",
+          "description": "Flow Registry Clients to provision on this runtime. Sensitive values (e.g. PAT) are injected from GitHub Environment secrets.",
+          "items": {
+            "$ref": "#/definitions/flow_registry_client"
+          }
+        },
+        "controller_services": {
+          "type": "array",
+          "description": "Controller-level controller services to provision on this runtime (created at root process group scope).",
+          "items": {
+            "$ref": "#/definitions/controller_service"
+          }
+        },
+        "flows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/flow"
+          }
+        },
+        "parameter_providers": {
+          "type": "array",
+          "description": "Parameter providers to provision on this runtime.",
+          "items": {
+            "$ref": "#/definitions/parameter_provider"
+          }
+        },
+        "connectors": {
+          "type": "array",
+          "description": "OpenFlow connectors to deploy on this runtime via SQL API.",
+          "items": {
+            "$ref": "#/definitions/connector"
+          }
+        }
+      }
+    },
+    "controller_service": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Controller service name in NiFi. Used as the unique identity for reconciliation."
+        },
+        "type": {
+          "type": "string",
+          "description": "Fully-qualified Java type of the controller service."
+        },
+        "properties": {
+          "type": "object",
+          "description": "Key-value properties to configure on the controller service.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "network_rule": {
+      "type": "object",
+      "required": ["name", "type", "mode", "values"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_-]{0,254}$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["HOST_PORT"]
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["EGRESS"]
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "flow_registry_client": {
+      "type": "object",
+      "required": ["name", "properties"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the Flow Registry Client in NiFi."
+        },
+        "type": {
+          "type": "string",
+          "description": "Fully-qualified Java type of the registry client. If omitted, the first available Git-based type is used."
+        },
+        "properties": {
+          "type": "object",
+          "description": "Key-value properties passed to the registry client API. Sensitive values (e.g. Personal Access Token) are injected from GitHub Environment secrets at deploy time.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "parameter_provider": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Parameter provider name in NiFi. Used as the unique identity for reconciliation."
+        },
+        "type": {
+          "type": "string",
+          "description": "Fully-qualified Java type of the parameter provider."
+        },
+        "sensitive_param_pattern": {
+          "type": "string",
+          "description": "Regex pattern applied to parameter names to determine sensitivity. Defaults to '.*' (all parameters are sensitive)."
+        },
+        "properties": {
+          "type": "object",
+          "description": "Key-value properties to configure on the parameter provider. Controller service names are automatically resolved to their NiFi UUIDs.",
+          "additionalProperties": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "connector": {
+      "type": "object",
+      "required": ["name", "definition"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_-]{0,254}$",
+          "description": "Snowflake identifier for the connector instance."
+        },
+        "definition": {
+          "type": "string",
+          "description": "Connector definition name (e.g. OPENFLOW_POSTGRES_CDC)."
+        },
+        "display_name": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "start": {
+          "type": "boolean",
+          "description": "If true, start the connector after configuration. Defaults to false."
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Parameter values to apply to the connector config.json. Keys are property names from the config sections. For STRING_LITERAL: value is set directly. For SECRET_REFERENCE: value is the fully qualified secret name. For ASSET_REFERENCE: handled via assets array.",
+          "additionalProperties": {
+            "type": ["string", "null"]
+          }
+        },
+        "assets": {
+          "type": "array",
+          "description": "Files to upload to the connector stage. Each asset is bound to an ASSET_REFERENCE parameter.",
+          "items": {
+            "type": "object",
+            "required": ["name", "url", "parameter"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Filename for the asset in the connector stage."
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL to download the asset file from."
+              },
+              "parameter": {
+                "type": "string",
+                "description": "ASSET_REFERENCE parameter name to bind this asset to."
+              }
+            }
+          }
+        }
+      }
+    },
+    "flow": {
+      "type": "object",
+      "required": ["name", "bucket", "flow", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Process group name in NiFi. Uniquely identifies this checkout — the same versioned flow may be checked out multiple times under different names."
+        },
+        "registry": {
+          "type": "string",
+          "description": "Name of the Flow Registry Client to use. Defaults to the first entry in flow_registries."
+        },
+        "bucket": {
+          "type": "string",
+          "description": "Flow bucket name in the registry."
+        },
+        "flow": {
+          "type": "string",
+          "description": "Flow name in the registry bucket."
+        },
+        "version": {
+          "type": "string",
+          "description": "Version to check out. Use 'latest' to always use the newest version, or a specific version string (commit SHA for GitHub-backed registries, semver for connector registries)."
+        },
+        "start": {
+          "type": "boolean",
+          "description": "If true, enable controller services and start processors after parameters are applied. Defaults to false."
+        },
+        "provided_parameter_contexts": {
+          "type": "string",
+          "description": "Regex pattern to filter which parameter contexts from providers are added as inherited. Only contexts with names matching this pattern are added. If not specified, no provider contexts are inherited by this flow."
+        },
+        "dedicated_parameter_context": {
+          "type": "boolean",
+          "description": "If true, create a dedicated parameter context for this flow instance instead of reusing existing ones. Required when deploying multiple instances of the same flow with different parameters. Defaults to false."
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Parameter values to set on the flow's parameter context(s). Keys are parameter names (context membership is resolved automatically). Values are strings; use null to clear a parameter.",
+          "additionalProperties": {
+            "type": ["string", "null"]
+          }
+        },
+        "parameter_overrides": {
+          "type": "object",
+          "description": "Parameter values to set as overrides in the flow's direct parameter context, shadowing any inherited values. Use this when deploying multiple instances with dedicated_parameter_context: true and different values for inherited parameters.",
+          "additionalProperties": {
+            "type": ["string", "null"]
+          }
+        },
+        "assets": {
+          "type": "array",
+          "description": "Files to download and upload as NiFi Parameter Context Assets. Each asset is bound to the specified parameter.",
+          "items": {
+            "type": "object",
+            "required": ["name", "url", "parameter"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Filename for the asset in the NiFi Parameter Context."
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL to download the asset file from."
+              },
+              "parameter": {
+                "type": "string",
+                "description": "Parameter name to bind this asset to."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

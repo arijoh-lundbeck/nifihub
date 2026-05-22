@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NiFi Hub Flow CI Test Configuration",
+  "description": "Defines the ephemeral runtime configuration for testing a flow in CI. The runtime is created before tests and destroyed after.",
+  "type": "object",
+  "required": ["github_environment", "deployment", "database", "schema", "node_type", "execute_as_role"],
+  "additionalProperties": false,
+  "properties": {
+    "github_environment": {
+      "type": "string",
+      "description": "GitHub Environment that holds secrets (SNOWFLAKE_PAT, NIFI_RUNTIME_PAT, etc.) for the target Snowflake account."
+    },
+    "deployment": {
+      "type": "string",
+      "description": "Existing Openflow deployment name to create the ephemeral runtime in."
+    },
+    "database": {
+      "type": "string",
+      "description": "Database where the ephemeral runtime is scoped."
+    },
+    "schema": {
+      "type": "string",
+      "description": "Schema where the ephemeral runtime is scoped."
+    },
+    "node_type": {
+      "type": "string",
+      "enum": ["SMALL", "MEDIUM", "LARGE"]
+    },
+    "min_nodes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 1
+    },
+    "max_nodes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 1
+    },
+    "execute_as_role": {
+      "type": "string",
+      "description": "Role that the runtime uses for Snowflake data access."
+    },
+    "sensitive_param_pattern": {
+      "type": "string",
+      "description": "Regex pattern to classify parameters from the auto-provisioned Snowflake Parameter Provider as sensitive. Defaults to '.*' (all sensitive).",
+      "default": ".*"
+    },
+    "provided_parameter_contexts": {
+      "type": "string",
+      "description": "Regex pattern to filter which parameter contexts from providers are added as inherited. Only contexts with names matching this pattern are added. If not specified, no provider contexts are inherited."
+    },
+    "network_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "mode", "values"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["HOST_PORT"] },
+          "mode": { "type": "string", "enum": ["EGRESS"] },
+          "values": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+        }
+      }
+    },
+    "flow_registries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "properties"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "properties": { "type": "object", "additionalProperties": { "type": "string" } }
+        }
+      }
+    },
+    "parameter_providers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "properties": { "type": "object", "additionalProperties": { "type": ["string", "null"] } }
+        }
+      }
+    },
+    "controller_services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "properties": { "type": "object", "additionalProperties": { "type": "string" } }
+        }
+      }
+    },
+    "nars": {
+      "type": "array",
+      "description": "NAR files to download and upload to the runtime before deploying the flow. URLs starting with ${GITHUB_RELEASES}/ are resolved to the current repo's releases at runtime. Full URLs (https://...) are used as-is.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "flow": {
+      "type": "object",
+      "description": "Post-deployment configuration for the flow under test. Parameters and assets are applied after the flow JSON is uploaded.",
+      "additionalProperties": false,
+      "properties": {
+        "parameters": {
+          "type": "object",
+          "description": "Parameter values to set on the flow's parameter context(s) after upload.",
+          "additionalProperties": { "type": ["string", "null"] }
+        },
+        "assets": {
+          "type": "array",
+          "description": "Files to download and bind to parameter context assets.",
+          "items": {
+            "type": "object",
+            "required": ["name", "url", "parameter"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "url": { "type": "string", "format": "uri" },
+              "parameter": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
