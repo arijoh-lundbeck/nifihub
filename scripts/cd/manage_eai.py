@@ -64,8 +64,12 @@ def fqn(database, schema, name):
     return f"{database}.{schema}.{name}"
 
 
-REGISTRY_NR_NAME = "OPENFLOW_NIFIHUB_REGISTRY_NR"
+REGISTRY_NR_BASE_NAME = "OPENFLOW_NIFIHUB_REGISTRY_NR"
 REGISTRY_NR_VALUES = ["github.com:443", "api.github.com:443"]
+
+
+def namespaced_nr_name(runtime_name, nr_name):
+    return f"{runtime_name.upper()}_{nr_name.upper()}"
 
 
 def eai_name_for_runtime(runtime_name):
@@ -142,18 +146,19 @@ def drop_eai(name, **kwargs):
 
 
 def create_runtime_eai(runtime_name, custom_network_rules, database, schema, execute_as_role=None, **kwargs):
+    registry_nr = namespaced_nr_name(runtime_name, REGISTRY_NR_BASE_NAME)
     create_network_rule(
-        REGISTRY_NR_NAME, "HOST_PORT", "EGRESS", REGISTRY_NR_VALUES,
+        registry_nr, "HOST_PORT", "EGRESS", REGISTRY_NR_VALUES,
         database, schema, **kwargs
     )
     for nr in (custom_network_rules or []):
         create_network_rule(
-            nr["name"], nr["type"], nr["mode"], nr["values"],
+            namespaced_nr_name(runtime_name, nr["name"]), nr["type"], nr["mode"], nr["values"],
             database, schema, **kwargs
         )
-    all_nr_fqns = [fqn(database, schema, REGISTRY_NR_NAME)]
+    all_nr_fqns = [fqn(database, schema, registry_nr)]
     for nr in (custom_network_rules or []):
-        all_nr_fqns.append(fqn(database, schema, nr["name"]))
+        all_nr_fqns.append(fqn(database, schema, namespaced_nr_name(runtime_name, nr["name"])))
     eai = eai_name_for_runtime(runtime_name)
     create_eai(eai, all_nr_fqns, database, schema, grant_to_role=execute_as_role, **kwargs)
     return eai
@@ -162,8 +167,10 @@ def create_runtime_eai(runtime_name, custom_network_rules, database, schema, exe
 def delete_runtime_eai(runtime_name, custom_network_rules, database, schema, **kwargs):
     eai = eai_name_for_runtime(runtime_name)
     drop_eai(eai, **kwargs)
+    registry_nr = namespaced_nr_name(runtime_name, REGISTRY_NR_BASE_NAME)
+    drop_network_rule(registry_nr, database, schema, **kwargs)
     for nr in (custom_network_rules or []):
-        drop_network_rule(nr["name"], database, schema, **kwargs)
+        drop_network_rule(namespaced_nr_name(runtime_name, nr["name"]), database, schema, **kwargs)
 
 
 def create_all(network_rules, eais, database, schema, **kwargs):

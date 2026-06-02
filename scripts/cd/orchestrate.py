@@ -24,7 +24,7 @@ from collections import defaultdict
 from manage_deployment import (
     create_deployment, alter_deployment, delete_deployment, describe_deployment, snow_sql
 )
-from manage_eai import create_runtime_eai, delete_runtime_eai, eai_name_for_runtime
+from manage_eai import create_runtime_eai, delete_runtime_eai, eai_name_for_runtime, namespaced_nr_name
 from manage_eai import create_network_rule, alter_network_rule, drop_network_rule, drop_eai
 from manage_runtime import (
     create_runtime, alter_runtime, delete_runtime, describe_runtime,
@@ -498,13 +498,13 @@ def apply_runtime_modification(mod, conn):
         nr_changes = mod.get("network_rule_changes", {})
         nr_created_or_deleted = any(nr_changes.get(k) for k in ("created", "deleted"))
         for nr in nr_changes.get("created", []):
-            create_network_rule(nr["name"], nr["type"], nr["mode"], nr["values"],
+            create_network_rule(namespaced_nr_name(rt["name"], nr["name"]), nr["type"], nr["mode"], nr["values"],
                                database, schema, **conn)
         for nr in nr_changes.get("deleted", []):
-            drop_network_rule(nr["name"], database, schema, **conn)
+            drop_network_rule(namespaced_nr_name(rt["name"], nr["name"]), database, schema, **conn)
         for nr_mod in nr_changes.get("modified", []):
             nr_new = nr_mod["new"]
-            alter_network_rule(nr_new["name"], nr_new["values"],
+            alter_network_rule(namespaced_nr_name(rt["name"], nr_new["name"]), nr_new["values"],
                                database, schema, **conn)
         if nr_created_or_deleted:
             create_runtime_eai(

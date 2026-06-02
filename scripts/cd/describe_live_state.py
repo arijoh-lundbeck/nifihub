@@ -118,8 +118,11 @@ def get_network_rules_for_runtime(runtime_name, database, schema, conn):
 
     nr_fqns = [nr.strip() for nr in allowed_nr_str.split(",") if nr.strip()]
 
+    prefix = f"{runtime_name.upper()}_"
     internal_nr_name = f"OPENFLOW_{runtime_name.upper()}_NR"
-    openflow_registry_nr = f"{database}.{schema}.OPENFLOW_NIFIHUB_REGISTRY_NR"
+    # Registry NR is now namespaced per runtime; also skip legacy un-namespaced form
+    namespaced_registry_nr = f"{database}.{schema}.{prefix}OPENFLOW_NIFIHUB_REGISTRY_NR"
+    legacy_registry_nr = f"{database}.{schema}.OPENFLOW_NIFIHUB_REGISTRY_NR"
 
     rules = []
     for nr_fqn in nr_fqns:
@@ -127,11 +130,9 @@ def get_network_rules_for_runtime(runtime_name, database, schema, conn):
         nr_name = parts[-1] if parts else nr_fqn
         if nr_name.upper() == internal_nr_name.upper():
             continue
-        if nr_fqn.upper() == openflow_registry_nr.upper():
+        if nr_fqn.upper() in (namespaced_registry_nr.upper(), legacy_registry_nr.upper()):
             continue
-        if nr_fqn.upper().startswith(f"{database}.{schema}.".upper()):
-            pass
-        else:
+        if not nr_fqn.upper().startswith(f"{database}.{schema}.".upper()):
             continue
 
         desc = describe_network_rule(nr_fqn, conn)
@@ -141,8 +142,13 @@ def get_network_rules_for_runtime(runtime_name, database, schema, conn):
         value_list_str = _get(desc, "value_list") or ""
         values = [v.strip() for v in value_list_str.split(",") if v.strip()]
 
+        # Strip the runtime name prefix to recover the logical name used in the YAML config.
+        # Namespaced rules are named {RUNTIME_NAME}_{LOGICAL_NAME}; un-namespaced rules
+        # (created before this change) are returned as-is for backward compatibility.
+        logical_name = nr_name[len(prefix):] if nr_name.upper().startswith(prefix) else nr_name
+
         rules.append({
-            "name": nr_name,
+            "name": logical_name,
             "type": _get(desc, "type") or "HOST_PORT",
             "mode": _get(desc, "mode") or "EGRESS",
             "values": values,
